@@ -30,8 +30,8 @@ import java.nio.charset.StandardCharsets;
 public class NotAVelocity {
 
     private static final String VELOCITY_HANDLER = "minecraft-encoder";
-    private static final String NOT_ON_VELOCITY_HANDLER = "not-on-velocity";
-    private static final int LOGIN_PLUGIN_ID = 159623; // just a random number for this plugin
+    private static final String NOT_A_VELOCITY_HANDLER = "not-a-velocity";
+    private static final int LOGIN_PLUGIN_ID = 159623;
 
     private final String suffix;
 
@@ -51,7 +51,7 @@ public class NotAVelocity {
 
         Channel channel = player.getConnection().getChannel();
 
-        channel.eventLoop().submit(() -> channel.pipeline().addBefore(VELOCITY_HANDLER, NOT_ON_VELOCITY_HANDLER, new ChannelDuplexHandler() {
+        channel.eventLoop().submit(() -> channel.pipeline().addBefore(VELOCITY_HANDLER, NOT_A_VELOCITY_HANDLER, new ChannelDuplexHandler() {
             @Override
             public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
                 ByteBuf buf = ((ByteBuf) msg).copy();
