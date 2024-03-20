@@ -3,6 +3,7 @@ package me.pesekjak.notavelocity;
 import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.LoginEvent;
+import com.velocitypowered.api.network.ProtocolState;
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.proxy.ProxyServer;
@@ -16,14 +17,13 @@ import com.velocitypowered.proxy.protocol.util.PluginMessageUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
-import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
 
 @Plugin(
         id = "notavelocity",
         name = "NotAVelocity",
-        version = "1.0",
+        version = "1.1.0",
         description = "Plugin that removes Velocity watermark from server's brand",
         authors = "pesekjak"
 )
@@ -37,6 +37,7 @@ public class NotAVelocity {
 
     @Inject
     public NotAVelocity(ProxyServer server) {
+        // from PluginMessageUtil#rewriteMinecraftBrand
         suffix = " (" + server.getVersion().getName() + ")";
     }
 
@@ -61,17 +62,17 @@ public class NotAVelocity {
                     return;
                 }
 
-                @Nullable ClientState state = ClientState.from(player.getConnection());
+                ProtocolState state = player.getProtocolState();
                 if (state == null
-                        || (state == ClientState.LOGIN && packetID != loginID)
-                        || (state == ClientState.CONFIG && packetID != configID)
-                        || (state == ClientState.PLAY && packetID != playID)) {
+                        || (state == ProtocolState.LOGIN && packetID != loginID)
+                        || (state == ProtocolState.CONFIGURATION && packetID != configID)
+                        || (state == ProtocolState.PLAY && packetID != playID)) {
                     super.write(ctx, msg, promise);
                     return;
                 }
 
                 PluginMessagePacketHolder holder;
-                if (state == ClientState.LOGIN)
+                if (state == ProtocolState.LOGIN)
                     holder = new PluginMessagePacketHolder(new LoginPluginMessagePacket());
                 else
                     holder = new PluginMessagePacketHolder(new PluginMessagePacket());
@@ -84,6 +85,7 @@ public class NotAVelocity {
 
                 String brand = removeSuffix(PluginMessageUtil.readBrandMessage(holder.getData()));
 
+                // from PluginMessageUtil#rewriteMinecraftBrand
                 ByteBuf rewritten = Unpooled.buffer();
                 if (protocolVersion.noLessThan(ProtocolVersion.MINECRAFT_1_8))
                     ProtocolUtils.writeString(rewritten, brand);
@@ -91,7 +93,7 @@ public class NotAVelocity {
                     rewritten.writeCharSequence(brand, StandardCharsets.UTF_8);
 
                 MinecraftPacket packet;
-                if (state == ClientState.LOGIN)
+                if (state == ProtocolState.LOGIN)
                     packet = new LoginPluginMessagePacket(LOGIN_PLUGIN_ID, holder.getChannel(), rewritten);
                 else
                     packet = new PluginMessagePacket(holder.getChannel(), rewritten);
